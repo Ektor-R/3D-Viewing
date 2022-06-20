@@ -3,16 +3,16 @@ import numpy as np
 # Conf
 IMG_WIDTH = 512
 
-def ambient_light(k, I):
+def ambient_light(k: float, I: np.ndarray) -> np.ndarray:
     """
-        Do What
+        Calculate ambient light
 
         Arguments:
-            k:
-            I:
+            k: Ambient reflection coefficient
+            I: Global ambient illumination
         
         Returns:
-            what
+            ambient light
     """
     
-    pass
+    return k * I
