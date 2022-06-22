@@ -126,3 +126,29 @@ def specular_light(
 
         return color + np.sum(reflections, axis=0)
 
+def calculateNormals(vertices: np.ndarray, faceIndices: np.ndarray) -> np.ndarray:
+    """
+        Calculate normal vector of all triangles on each of their vertices
+
+        Arguments:
+            vertices: Array with coordinates of vertices
+            faceIndices: Array with the indexes of each vertices of the triangles
+
+        Returns:
+            array with the normal vectors on each vertex
+    """
+    
+    triangleNormals = np.cross(
+        vertices[faceIndices[:,1]] - vertices[faceIndices[:,0]], 
+        vertices[faceIndices[:,2]] - vertices[faceIndices[:,0]]
+    )
+
+    normals = np.zeros([vertices.shape[0],3])
+
+    normals[faceIndices[:,0]] = triangleNormals + vertices[faceIndices[:,0]]
+    normals[faceIndices[:,1]] = triangleNormals + vertices[faceIndices[:,1]]
+    normals[faceIndices[:,2]] = triangleNormals + vertices[faceIndices[:,2]]
+
+    # TODO normal = 0
+
+    return normals / np.linalg.norm(normals, axis=1)[:,None]
