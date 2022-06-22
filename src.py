@@ -1,7 +1,8 @@
 import numpy as np
+import triangle_rasterizer
+import projection
 
 # Conf
-IMG_WIDTH = 512
 
 
 
@@ -126,7 +127,9 @@ def specular_light(
 
         return color + np.sum(reflections, axis=0)
 
-def calculateNormals(vertices: np.ndarray, faceIndices: np.ndarray) -> np.ndarray:
+
+
+def calculate_normals(vertices: np.ndarray, faceIndices: np.ndarray) -> np.ndarray:
     """
         Calculate normal vector of all triangles on each of their vertices
 
@@ -152,3 +155,176 @@ def calculateNormals(vertices: np.ndarray, faceIndices: np.ndarray) -> np.ndarra
     # TODO normal = 0
 
     return normals / np.linalg.norm(normals, axis=1)[:,None]
+
+
+
+def render_object(
+        shader: str,
+        focal: float, 
+        eye: np.ndarray, 
+        lookat: np.ndarray, 
+        up: np.ndarray, 
+        backgroundColor: np.ndarray, 
+        imageM: int, 
+        imageN: int, 
+        cameraHeight: float,
+        cameraWidth: float,
+        verts: np.ndarray,
+        vertsColors: np.ndarray,
+        faceIndices: np.ndarray,
+        ka: float,
+        kd: float,
+        ks: float,
+        lightPositions: np.ndarray,
+        lightIntensities: np.ndarray,
+        Ia: np.ndarray
+    ) -> np.ndarray:
+        """
+            Render object
+
+            Arguments:
+                shader: Shader type. gouraud or phong.
+                focal: Camera focal length.
+                eye: Camera center.
+                lookat: Camera lookat.
+                up: Camera up.
+                backgroundColor: Image background color.
+                imageM: image row size.
+                imageN: Image column size.
+                cameraHeight: Camera height.
+                cameraWidth: Camera width.
+                verts: Coordinates of vertices.
+                vertsColors: Colors of vertices.
+                faceIndices: Indexing of vertices of triangles.
+                ka: Ambient coefficient.
+                kd: Diffuse coefficient.
+                ks: Specular coefficient.
+                lightPositions: Coordinates of light sources.
+                lightIntensities: Intensity of light sources.
+                Ia: Intensity of ambient light.
+
+            Returns:
+                rgb image
+        """
+
+        normals = calculate_normals(verts, faceIndices)
+
+        [verts2d, depth] = projection.project_cam_lookat(focal, eye, lookat, up, verts)
+        verts2d = projection.rasterize(verts2d, imageM, imageN, cameraHeight, cameraWidth)
+
+        # Sort triangles based on depth
+        faceIndices = triangle_rasterizer._sort_faces(faceIndices, depth)
+
+        # Initialize image.
+        img = np.full( (imageM, imageN, 3) , backgroundColor)
+
+        if shader == 'gouraud':
+            for face in faceIndices:
+                img = shade_gouraud(
+                        verts2d[face], 
+                        normals[face], 
+                        vertsColors[face], 
+                        np.mean(verts2d[face], axis=0), 
+                        eye, 
+                        ka, 
+                        kd, 
+                        ks, 
+                        lightPositions, 
+                        lightIntensities, 
+                        Ia, 
+                        img
+                    )
+        elif shader == 'phong':
+            for face in faceIndices:
+                img = shade_phong(
+                        verts2d[face], 
+                        normals[face], 
+                        vertsColors[face], 
+                        np.mean(verts2d[face], axis=0), 
+                        eye, 
+                        ka, 
+                        kd, 
+                        ks, 
+                        lightPositions, 
+                        lightIntensities, 
+                        Ia, 
+                        img
+                    )
+
+
+
+def shade_gouraud(
+        verts2d: np.ndarray,
+        normals: np.ndarray,
+        vertsColors: np.ndarray,
+        bcoords: np.ndarray,
+        cameraPosition: np.ndarray,
+        ka: float,
+        kd: float,
+        ks: float,
+        lightPositions: np.ndarray,
+        lightIntensities: np.ndarray,
+        Ia: np.ndarray,
+        X: np.ndarray
+    ):
+        """
+            Shade triangle with gouraud algorithm
+
+            Arguments:
+                verts2d: Triangle vertices coordinates on camera.
+                normals: Normal vectors of vertices.
+                vertsColors: Triangle vertices colors.
+                bcoords: Centroid of triangle.
+                cameraPosition: Camera center.
+                ka: Ambient coefficient.
+                kd: Diffuse coefficient.
+                ks: Specular coefficient.
+                lightPositions: Coordinates of light sources.
+                lightIntensities: Intensity of light sources.
+                Ia: Intensity of ambient light.
+                X: Image.
+
+            Returns:
+                image X with the new triangle
+        """
+
+        pass
+
+
+
+def shade_phong(
+        verts2d: np.ndarray,
+        normals: np.ndarray,
+        vertsColors: np.ndarray,
+        bcoords: np.ndarray,
+        cameraPosition: np.ndarray,
+        ka: float,
+        kd: float,
+        ks: float,
+        lightPositions: np.ndarray,
+        lightIntensities: np.ndarray,
+        Ia: np.ndarray,
+        X: np.ndarray
+    ):
+        """
+            Shade triangle with phong algorithm
+
+            Arguments:
+                verts2d: Triangle vertices coordinates on camera.
+                normals: Normal vectors of vertices.
+                vertsColors: Triangle vertices colors.
+                bcoords: Centroid of triangle.
+                cameraPosition: Camera center.
+                ka: Ambient coefficient.
+                kd: Diffuse coefficient.
+                ks: Specular coefficient.
+                lightPositions: Coordinates of light sources.
+                lightIntensities: Intensity of light sources.
+                Ia: Intensity of ambient light.
+                X: Image.
+
+            Returns:
+                image X with the new triangle
+        """
+
+        pass
