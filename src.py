@@ -294,7 +294,18 @@ def shade_gouraud(
                 image X with the new triangle
         """
 
-        pass
+        vertsColors = vertsColors + ambient_light(ka, Ia)
+
+        for i in (0,2):
+            vertsColors[i] = diffuse_light(bcoords, normals[i], vertsColors[i], kd, lightPositions, lightIntensities)
+            # TODO n?
+            vertsColors[i] = specular_light(bcoords, normals[i], vertsColors[i], cameraPosition, ks, 1, lightPositions, lightIntensities)
+
+        # Clip color
+        vertsColors[vertsColors < 0] = 0
+        vertsColors[vertsColors > 1.] = 1.
+
+        return triangle_rasterizer.shade_triangle(X, verts2d, vertsColors, 'gouraud')
 
 
 
