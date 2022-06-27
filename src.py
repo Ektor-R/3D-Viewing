@@ -59,11 +59,11 @@ def diffuse_light(
         # Calculate (cosine of) angle of each light source with N (dot product of each light vector with N)
         lightAngles = np.einsum('j,ij->i', N, lightVectors)
 
-        lightDistances = np.linalg.norm(lightPositions-point, axis=1)
-        attenuationFactors = 1/(lightDistances**2)
+        #lightDistances = np.linalg.norm(lightPositions-point, axis=1)
+        #attenuationFactors = 1/(lightDistances**2)
 
         # Reflection created by each light source
-        reflections = lightIntensities * attenuationFactors[:,None] * k * lightAngles[:,None]
+        reflections = lightIntensities * k * lightAngles[:,None] # * attenuationFactors[:,None]
 
         # TODO reflection larger than 1
 
@@ -140,6 +140,10 @@ def calculate_normals(vertices: np.ndarray, faceIndices: np.ndarray) -> np.ndarr
         Returns:
             array with the normal vectors on each vertex
     """
+
+    # If faceIndices is vector, make it array.
+    if faceIndices.ndim == 1:
+        faceIndices = faceIndices[None]
     
     triangleNormals = np.cross(
         vertices[faceIndices[:,1]] - vertices[faceIndices[:,0]], 
@@ -224,7 +228,7 @@ def render_object(
                         verts2d[face], 
                         normals[face], 
                         vertsColors[face], 
-                        np.mean(verts2d[face], axis=0), 
+                        np.mean(verts[face], axis=0), 
                         eye, 
                         ka, 
                         kd, 
@@ -240,7 +244,7 @@ def render_object(
                         verts2d[face], 
                         normals[face], 
                         vertsColors[face], 
-                        np.mean(verts2d[face], axis=0), 
+                        np.mean(verts[face], axis=0), 
                         eye, 
                         ka, 
                         kd, 
@@ -250,6 +254,8 @@ def render_object(
                         Ia, 
                         img
                     )
+
+        return img
 
 
 
