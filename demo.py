@@ -26,12 +26,15 @@ N = data[()]['N']
 W = data[()]['W']
 H = data[()]['H']
 bg_color = data[()]['bg_color']
+focal = 70
+
+src.N_PHONG = n
 
 print('Done!')
 
 # Gouraud ambient
 print('Render image gouraud_ambient...')
-img = src.render_object('gouraud', 70, cam_eye, cam_lookat, cam_up, bg_color, M, N, H, W, verts, vertex_colors, face_indices, ka, 0, 0, np.array(light_positions), np.array(light_intensities), Ia)
+img = src.render_object('gouraud', focal, cam_eye, cam_lookat, cam_up, bg_color, M, N, H, W, verts, vertex_colors, face_indices, ka, 0, 0, np.array(light_positions), np.array(light_intensities), Ia)
 cv2.imwrite(
     '1.gouraud_ambient.jpg',
     cv2.cvtColor( (img*255).astype(np.uint8), cv2.COLOR_RGB2BGR)
@@ -42,7 +45,7 @@ print('Done!')
 # Gouraud diffuse
 print('Render image gouraud_diffuse...')
 
-img = src.render_object('gouraud', 70, cam_eye, cam_lookat, cam_up, bg_color, M, N, H, W, verts, vertex_colors, face_indices, 0, kd, 0, np.array(light_positions), np.array(light_intensities), Ia)
+img = src.render_object('gouraud', focal, cam_eye, cam_lookat, cam_up, bg_color, M, N, H, W, verts, vertex_colors, face_indices, 0, kd, 0, np.array(light_positions), np.array(light_intensities), Ia)
 cv2.imwrite(
     '2.gouraud_diffuse.jpg',
     cv2.cvtColor( (img*255).astype(np.uint8), cv2.COLOR_RGB2BGR)
@@ -53,7 +56,7 @@ print('Done!')
 # Gouraud specular
 print('Render image gouraud_specular...')
 
-img = src.render_object('gouraud', 70, cam_eye, cam_lookat, cam_up, bg_color, M, N, H, W, verts, vertex_colors, face_indices, 0, 0, ks, np.array(light_positions), np.array(light_intensities), Ia)
+img = src.render_object('gouraud', focal, cam_eye, cam_lookat, cam_up, bg_color, M, N, H, W, verts, vertex_colors, face_indices, 0, 0, ks, np.array(light_positions), np.array(light_intensities), Ia)
 cv2.imwrite(
     '3.gouraud_specular.jpg',
     cv2.cvtColor( (img*255).astype(np.uint8), cv2.COLOR_RGB2BGR)
@@ -64,7 +67,7 @@ print('Done!')
 # Gouraud all
 print('Render image gouraud_all...')
 
-img = src.render_object('gouraud', 70, cam_eye, cam_lookat, cam_up, bg_color, M, N, H, W, verts, vertex_colors, face_indices, ka, kd, ks, np.array(light_positions), np.array(light_intensities), Ia)
+img = src.render_object('gouraud', focal, cam_eye, cam_lookat, cam_up, bg_color, M, N, H, W, verts, vertex_colors, face_indices, ka, kd, ks, np.array(light_positions), np.array(light_intensities), Ia)
 cv2.imwrite(
     '4.gouraud_all.jpg',
     cv2.cvtColor( (img*255).astype(np.uint8), cv2.COLOR_RGB2BGR)

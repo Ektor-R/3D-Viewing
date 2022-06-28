@@ -96,7 +96,7 @@ def shade_triangle(img: np.ndarray, verts2d: np.ndarray, vcolors: np.ndarray, sh
         )
 
     # Scan lines from minimum Y to maximum Y
-    for Y in range(int(Ymin.min()), int(Ymax.max()) + 1): 
+    for Y in range(round(Ymin.min()), round(Ymax.max()) + 1): 
         # Clip if out of image size
         if 0 <= Y < np.shape(img)[0]:
             # Calculate line colour extremes for gouraud algorithm
@@ -105,15 +105,15 @@ def shade_triangle(img: np.ndarray, verts2d: np.ndarray, vcolors: np.ndarray, sh
                 finishLine = np.nanargmax(activeMarginalPoints)
 
                 scanLineStartColour = interpolate_color(
-                    verts2d[ sidesHaveVerts[startingLine][0] ][1],
-                    verts2d[ sidesHaveVerts[startingLine][1] ][1],
+                    round(verts2d[ sidesHaveVerts[startingLine][0] ][1]),
+                    round(verts2d[ sidesHaveVerts[startingLine][1] ][1]),
                     Y,
                     vcolors[ sidesHaveVerts[startingLine][0] ],
                     vcolors[ sidesHaveVerts[startingLine][1] ])
 
                 scanLineEndColour = interpolate_color(
-                    verts2d[ sidesHaveVerts[finishLine][0] ][1],
-                    verts2d[ sidesHaveVerts[finishLine][1] ][1],
+                    round(verts2d[ sidesHaveVerts[finishLine][0] ][1]),
+                    round(verts2d[ sidesHaveVerts[finishLine][1] ][1]),
                     Y,
                     vcolors[ sidesHaveVerts[finishLine][0] ],
                     vcolors[ sidesHaveVerts[finishLine][1] ])
@@ -127,8 +127,8 @@ def shade_triangle(img: np.ndarray, verts2d: np.ndarray, vcolors: np.ndarray, sh
                         img[int(Y)][int(X)] = flatColour
                     elif shade_t == 'gouraud':
                         img[int(Y)][int(X)] = interpolate_color(
-                            np.nanmin(activeMarginalPoints),
-                            np.nanmax(activeMarginalPoints),
+                            round(np.nanmin(activeMarginalPoints)),
+                            round(np.nanmax(activeMarginalPoints)),
                             X,
                             scanLineStartColour,
                             scanLineEndColour

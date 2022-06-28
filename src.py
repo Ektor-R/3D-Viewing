@@ -3,10 +3,11 @@ import triangle_rasterizer
 import projection
 
 # Conf
+N_PHONG = 1
 
 
 
-def ambient_light(k: float, I: np.ndarray) -> np.ndarray:
+def ambient_light(ka: float, Ia: np.ndarray) -> np.ndarray:
     """
         Calculate ambient light
 
@@ -18,7 +19,7 @@ def ambient_light(k: float, I: np.ndarray) -> np.ndarray:
             ambient light
     """
     
-    return k * I
+    return ka * Ia
 
 
 
@@ -26,7 +27,7 @@ def diffuse_light(
         point: np.ndarray,
         N: np.ndarray, 
         color: np.ndarray, 
-        k: float, 
+        kd: float, 
         lightPositions: np.ndarray, 
         lightIntensities: np.ndarray
     ) -> np.ndarray:
@@ -63,9 +64,7 @@ def diffuse_light(
         #attenuationFactors = 1/(lightDistances**2)
 
         # Reflection created by each light source
-        reflections = lightIntensities * k * lightAngles[:,None] # * attenuationFactors[:,None]
-
-        # TODO reflection larger than 1
+        reflections = lightIntensities * kd * lightAngles[:,None] # * attenuationFactors[:,None]
 
         return color + np.sum(reflections, axis=0)
 
@@ -76,7 +75,7 @@ def specular_light(
         N: np.ndarray, 
         color: np.ndarray, 
         cameraPosition: np.ndarray, 
-        k: float,
+        ks: float,
         n: float,
         lightPositions: np.ndarray,
         lightIntensities: np.ndarray
@@ -121,9 +120,7 @@ def specular_light(
             )
 
         # Reflection created by each light source
-        reflections = lightIntensities * k * (lightAngles[:,None]**n)
-
-        # TODO reflection larger than 1
+        reflections = lightIntensities * ks * (lightAngles[:,None]**n)
 
         return color + np.sum(reflections, axis=0)
 
@@ -299,7 +296,7 @@ def shade_gouraud(
         for i in (0,2):
             vertsColors[i] = diffuse_light(bcoords, normals[i], vertsColors[i], kd, lightPositions, lightIntensities)
             # TODO n?
-            vertsColors[i] = specular_light(bcoords, normals[i], vertsColors[i], cameraPosition, ks, 1, lightPositions, lightIntensities)
+            vertsColors[i] = specular_light(bcoords, normals[i], vertsColors[i], cameraPosition, ks, N_PHONG, lightPositions, lightIntensities)
 
         # Clip color
         vertsColors[vertsColors < 0] = 0
