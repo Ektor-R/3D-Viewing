@@ -32,6 +32,8 @@ src.N_PHONG = n
 
 print('Done!')
 
+#-------------- Gouraud --------------
+
 # Gouraud ambient
 print('Render image gouraud_ambient...')
 img = src.render_object('gouraud', focal, cam_eye, cam_lookat, cam_up, bg_color, M, N, H, W, verts, vertex_colors, face_indices, ka, 0, 0, np.array(light_positions), np.array(light_intensities), Ia)
@@ -70,6 +72,52 @@ print('Render image gouraud_all...')
 img = src.render_object('gouraud', focal, cam_eye, cam_lookat, cam_up, bg_color, M, N, H, W, verts, vertex_colors, face_indices, ka, kd, ks, np.array(light_positions), np.array(light_intensities), Ia)
 cv2.imwrite(
     '4.gouraud_all.jpg',
+    cv2.cvtColor( (img*255).astype(np.uint8), cv2.COLOR_RGB2BGR)
+)
+
+print('Done!')
+
+
+#-------------- Phong --------------
+
+# Phong ambient
+print('Render image phong_ambient...')
+img = src.render_object('phong', focal, cam_eye, cam_lookat, cam_up, bg_color, M, N, H, W, verts, vertex_colors, face_indices, ka, 0, 0, np.array(light_positions), np.array(light_intensities), Ia)
+cv2.imwrite(
+    '5.phong_ambient.jpg',
+    cv2.cvtColor( (img*255).astype(np.uint8), cv2.COLOR_RGB2BGR)
+)
+
+print('Done!')
+
+# Phong diffuse
+print('Render image phong_diffuse...')
+
+img = src.render_object('phong', focal, cam_eye, cam_lookat, cam_up, bg_color, M, N, H, W, verts, vertex_colors, face_indices, 0, kd, 0, np.array(light_positions), np.array(light_intensities), Ia)
+cv2.imwrite(
+    '6.phong_diffuse.jpg',
+    cv2.cvtColor( (img*255).astype(np.uint8), cv2.COLOR_RGB2BGR)
+)
+
+print('Done!')
+
+# Phong specular
+print('Render image phong_specular...')
+
+img = src.render_object('phong', focal, cam_eye, cam_lookat, cam_up, bg_color, M, N, H, W, verts, vertex_colors, face_indices, 0, 0, ks, np.array(light_positions), np.array(light_intensities), Ia)
+cv2.imwrite(
+    '7.phong_specular.jpg',
+    cv2.cvtColor( (img*255).astype(np.uint8), cv2.COLOR_RGB2BGR)
+)
+
+print('Done!')
+
+# Phong all
+print('Render image phong_all...')
+
+img = src.render_object('phong', focal, cam_eye, cam_lookat, cam_up, bg_color, M, N, H, W, verts, vertex_colors, face_indices, ka, kd, ks, np.array(light_positions), np.array(light_intensities), Ia)
+cv2.imwrite(
+    '8.phong_all.jpg',
     cv2.cvtColor( (img*255).astype(np.uint8), cv2.COLOR_RGB2BGR)
 )
 
