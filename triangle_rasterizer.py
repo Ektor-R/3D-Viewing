@@ -1,11 +1,12 @@
 import numpy as np
+import src
 
 # Conf
 BACKGROUND = [1., 1., 1.]
 M = 512
 N = 512
 
-def interpolate_color(x1: float, x2: float, x: float, C1: np.ndarray, C2: np.ndarray) -> np.ndarray:
+def interpolate(x1: float, x2: float, x: float, C1: np.ndarray, C2: np.ndarray) -> np.ndarray:
     """
         Interpolate colour on a specified point between two points
 
@@ -29,7 +30,7 @@ def interpolate_color(x1: float, x2: float, x: float, C1: np.ndarray, C2: np.nda
 
 
 
-def shade_triangle(img: np.ndarray, verts2d: np.ndarray, vcolors: np.ndarray, shade_t: str) -> np.ndarray:
+def shade_triangle(img: np.ndarray, verts2d: np.ndarray, vcolors: np.ndarray, shade_t: str, vnormals: np.ndarray = np.nan, bcoords: np.ndarray = np.nan, cameraPosition: np.ndarray = np.nan, ka: float = 0, kd: float = 0, ks: float = 0, n: float = 0, lightPositions: np.ndarray = np.nan, lightIntensities: np.ndarray = np.nan, Ia: np.ndarray = np.nan) -> np.ndarray:
     """
         Draw triangle
 
@@ -99,24 +100,40 @@ def shade_triangle(img: np.ndarray, verts2d: np.ndarray, vcolors: np.ndarray, sh
     for Y in range(round(Ymin.min()), round(Ymax.max()) + 1): 
         # Clip if out of image size
         if 0 <= Y < np.shape(img)[0]:
-            # Calculate line colour extremes for gouraud algorithm
-            if shade_t == 'gouraud':
+            # Calculate line colour extremes for gouraud or phong algorithm
+            if shade_t == 'gouraud' or shade_t == 'phong':
                 startingLine = np.nanargmin(activeMarginalPoints)
                 finishLine = np.nanargmax(activeMarginalPoints)
 
-                scanLineStartColour = interpolate_color(
+                scanLineStartColour = interpolate(
                     round(verts2d[ sidesHaveVerts[startingLine][0] ][1]),
                     round(verts2d[ sidesHaveVerts[startingLine][1] ][1]),
                     Y,
                     vcolors[ sidesHaveVerts[startingLine][0] ],
                     vcolors[ sidesHaveVerts[startingLine][1] ])
 
-                scanLineEndColour = interpolate_color(
+                scanLineEndColour = interpolate(
                     round(verts2d[ sidesHaveVerts[finishLine][0] ][1]),
                     round(verts2d[ sidesHaveVerts[finishLine][1] ][1]),
                     Y,
                     vcolors[ sidesHaveVerts[finishLine][0] ],
                     vcolors[ sidesHaveVerts[finishLine][1] ])
+            
+            # Calculate normals on marginal points for phong algorithm
+            if shade_t == 'phong':
+                scanLineStartNormal = interpolate(
+                    round(verts2d[ sidesHaveVerts[startingLine][0] ][1]),
+                    round(verts2d[ sidesHaveVerts[startingLine][1] ][1]),
+                    Y,
+                    vnormals[ sidesHaveVerts[startingLine][0] ],
+                    vnormals[ sidesHaveVerts[startingLine][1] ])
+
+                scanLineEndNormal = interpolate(
+                    round(verts2d[ sidesHaveVerts[finishLine][0] ][1]),
+                    round(verts2d[ sidesHaveVerts[finishLine][1] ][1]),
+                    Y,
+                    vnormals[ sidesHaveVerts[finishLine][0] ],
+                    vnormals[ sidesHaveVerts[finishLine][1] ])
 
             # Scan line Y
             # Draw between min to max marginal points.
@@ -126,13 +143,38 @@ def shade_triangle(img: np.ndarray, verts2d: np.ndarray, vcolors: np.ndarray, sh
                     if shade_t == 'flat':
                         img[int(Y)][int(X)] = flatColour
                     elif shade_t == 'gouraud':
-                        img[int(Y)][int(X)] = interpolate_color(
+                        img[int(Y)][int(X)] = interpolate(
                             round(np.nanmin(activeMarginalPoints)),
                             round(np.nanmax(activeMarginalPoints)),
                             X,
                             scanLineStartColour,
                             scanLineEndColour
                         )
+                    elif shade_t == 'phong':
+                        pixelColor = interpolate(
+                            round(np.nanmin(activeMarginalPoints)),
+                            round(np.nanmax(activeMarginalPoints)),
+                            X,
+                            scanLineStartColour,
+                            scanLineEndColour
+                        )
+                        pointNormal = interpolate(
+                            round(np.nanmin(activeMarginalPoints)),
+                            round(np.nanmax(activeMarginalPoints)),
+                            X,
+                            scanLineStartNormal,
+                            scanLineEndNormal
+                        )
+
+                        pixelColor = pixelColor + src.ambient_light(ka, Ia)
+                        pixelColor = src.diffuse_light(bcoords, pointNormal, pixelColor, kd, lightPositions, lightIntensities)
+                        pixelColor = src.specular_light(bcoords, pointNormal, pixelColor, cameraPosition, ks, n, lightPositions, lightIntensities)
+
+                        # Clip color
+                        pixelColor[pixelColor > 1.] = 1.
+                        pixelColor[pixelColor < 0.] = 0.
+
+                        img[int(Y)][int(X)] = pixelColor
 
         # Update active sides and marginal points
         for side in activeSides:

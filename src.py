@@ -295,7 +295,6 @@ def shade_gouraud(
 
         for i in (0,2):
             vertsColors[i] = diffuse_light(bcoords, normals[i], vertsColors[i], kd, lightPositions, lightIntensities)
-            # TODO n?
             vertsColors[i] = specular_light(bcoords, normals[i], vertsColors[i], cameraPosition, ks, N_PHONG, lightPositions, lightIntensities)
 
         # Clip color
@@ -341,4 +340,19 @@ def shade_phong(
                 image X with the new triangle
         """
 
-        pass
+        return triangle_rasterizer.shade_triangle(
+                X, 
+                verts2d, 
+                vertsColors, 
+                'phong',
+                normals,
+                bcoords,
+                cameraPosition,
+                ka,
+                kd,
+                ks,
+                N_PHONG,
+                lightPositions,
+                lightIntensities,
+                Ia
+            )
