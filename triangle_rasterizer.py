@@ -1,10 +1,6 @@
 import numpy as np
-import src
 
-# Conf
-BACKGROUND = [1., 1., 1.]
-M = 512
-N = 512
+import src
 
 def interpolate(x1: float, x2: float, x: float, C1: np.ndarray, C2: np.ndarray) -> np.ndarray:
     """
@@ -30,210 +26,188 @@ def interpolate(x1: float, x2: float, x: float, C1: np.ndarray, C2: np.ndarray) 
 
 
 
-def shade_triangle(img: np.ndarray, verts2d: np.ndarray, vcolors: np.ndarray, shade_t: str, vnormals: np.ndarray = np.nan, bcoords: np.ndarray = np.nan, cameraPosition: np.ndarray = np.nan, ka: float = 0, kd: float = 0, ks: float = 0, n: float = 0, lightPositions: np.ndarray = np.nan, lightIntensities: np.ndarray = np.nan, Ia: np.ndarray = np.nan) -> np.ndarray:
-    """
-        Draw triangle
+def shade_triangle(
+        img: np.ndarray, 
+        verts2d: np.ndarray, 
+        vcolors: np.ndarray, 
+        shade_t: str, 
+        vnormals: np.ndarray = np.nan, 
+        bcoords: np.ndarray = np.nan, 
+        cameraPosition: np.ndarray = np.nan, 
+        ka: float = 0, 
+        kd: float = 0, 
+        ks: float = 0, 
+        n: float = 0, 
+        lightPositions: np.ndarray = np.nan, 
+        lightIntensities: np.ndarray = np.nan, 
+        Ia: np.ndarray = np.nan
+    ) -> np.ndarray:
+        """
+            Draw triangle
 
-        Arguments:
-            img: Existing image to draw on
-            verts2d:
-            vcolors:
-            shade_t: flat or gouraud
-        
-        Returns:
-            new image
-    """
-
-    # Initialise some variables
-    sidesHaveVerts = np.empty([3,2], 'int')     # Index represents each of the three sides. 
-                                                # Values are the indexes for the vertices in verts2d (two for each side)
-    Ymin = np.empty(3)                          # Index -> sides. Values -> Minimum Y coordinate of the two vertices
-    Ymax = np.empty(3)                          # Index -> sides. Values -> Minimum Y coordinate of the two vertices
-    sideGradient = np.empty(3)                  # Index -> sides. Values -> Gradient of each side
-
-    activeMarginalPoints = np.array([np.nan, np.nan, np.nan])   # Index represents each of the three sides.
-                                                                # Values are the x coordinate of the point where
-                                                                # scan line meets the side. nan when side is inactive
-
-    # Calculate triangle colour for flat algorithm
-    if shade_t == 'flat':
-        flatColour = np.array([
-            np.sum(vcolors[:,0])/3,
-            np.sum(vcolors[:,1])/3,
-            np.sum(vcolors[:,2])/3
-        ])
-
-    # Store info for each side.
-        #Sides are:
-        #Side 0: vertice 0 to 1
-        #Side 1: vertice 1 to 0
-        #Side 2: vertice 2 to 0
-    for k in range(3):
-        sideStart = k
-        sidesHaveVerts[k][0] = sideStart
-        sideEnd = (k+1)<=2 and k+1 or 0         # If k+1=3: vertice=0
-        sidesHaveVerts[k][1] = sideEnd
-
-        Ymin[k] = min(verts2d[sideStart][1], verts2d[sideEnd][1])
-        Ymax[k] = max(verts2d[sideStart][1], verts2d[sideEnd][1])
-
-        if verts2d[sideEnd][0] == verts2d[sideStart][0]:    # When side is vertical.
-            sideGradient[k] = np.inf
-        else:
-            sideGradient[k] = (                                     # ( yEnd-yStart ) / ( xend-xstart )
-                (verts2d[sideEnd][1] - verts2d[sideStart][1])/
-                (verts2d[sideEnd][0] - verts2d[sideStart][0])
-            )
-    
-    # First scan line begins on minimum Y.
-    activeSides = np.where(Ymin == Ymin.min())[0]
-    for side in activeSides:
-        activeMarginalPoints[side] = min(
-            verts2d[
-                sidesHaveVerts[side][
-                    np.where( verts2d[ sidesHaveVerts[side] ][:,1] == Ymin.min() )
-                ]
-            ][:,0]
-        )
-
-    # Scan lines from minimum Y to maximum Y
-    for Y in range(round(Ymin.min()), round(Ymax.max()) + 1): 
-        # Clip if out of image size
-        if 0 <= Y < np.shape(img)[0]:
-            # Calculate line colour extremes for gouraud or phong algorithm
-            if shade_t == 'gouraud' or shade_t == 'phong':
-                startingLine = np.nanargmin(activeMarginalPoints)
-                finishLine = np.nanargmax(activeMarginalPoints)
-
-                scanLineStartColour = interpolate(
-                    round(verts2d[ sidesHaveVerts[startingLine][0] ][1]),
-                    round(verts2d[ sidesHaveVerts[startingLine][1] ][1]),
-                    Y,
-                    vcolors[ sidesHaveVerts[startingLine][0] ],
-                    vcolors[ sidesHaveVerts[startingLine][1] ])
-
-                scanLineEndColour = interpolate(
-                    round(verts2d[ sidesHaveVerts[finishLine][0] ][1]),
-                    round(verts2d[ sidesHaveVerts[finishLine][1] ][1]),
-                    Y,
-                    vcolors[ sidesHaveVerts[finishLine][0] ],
-                    vcolors[ sidesHaveVerts[finishLine][1] ])
+            Arguments:
+                img: Existing image to draw on
+                verts2d:
+                vcolors:
+                shade_t: flat or gouraud
             
-            # Calculate normals on marginal points for phong algorithm
-            if shade_t == 'phong':
-                scanLineStartNormal = interpolate(
-                    round(verts2d[ sidesHaveVerts[startingLine][0] ][1]),
-                    round(verts2d[ sidesHaveVerts[startingLine][1] ][1]),
-                    Y,
-                    vnormals[ sidesHaveVerts[startingLine][0] ],
-                    vnormals[ sidesHaveVerts[startingLine][1] ])
+            Returns:
+                new image
+        """
 
-                scanLineEndNormal = interpolate(
-                    round(verts2d[ sidesHaveVerts[finishLine][0] ][1]),
-                    round(verts2d[ sidesHaveVerts[finishLine][1] ][1]),
-                    Y,
-                    vnormals[ sidesHaveVerts[finishLine][0] ],
-                    vnormals[ sidesHaveVerts[finishLine][1] ])
+        # Initialise some variables
+        sidesHaveVerts = np.empty([3,2], 'int')     # Index represents each of the three sides. 
+                                                    # Values are the indexes for the vertices in verts2d (two for each side)
+        Ymin = np.empty(3)                          # Index -> sides. Values -> Minimum Y coordinate of the two vertices
+        Ymax = np.empty(3)                          # Index -> sides. Values -> Minimum Y coordinate of the two vertices
+        sideGradient = np.empty(3)                  # Index -> sides. Values -> Gradient of each side
 
-            # Scan line Y
-            # Draw between min to max marginal points.
-            for X in range(round(np.nanmin(activeMarginalPoints)), round(np.nanmax(activeMarginalPoints)) + 1):
-                # Clip if out of image size
-                if 0 <= X < np.shape(img)[1]:
-                    if shade_t == 'flat':
-                        img[int(Y)][int(X)] = flatColour
-                    elif shade_t == 'gouraud':
-                        img[int(Y)][int(X)] = interpolate(
-                            round(np.nanmin(activeMarginalPoints)),
-                            round(np.nanmax(activeMarginalPoints)),
-                            X,
-                            scanLineStartColour,
-                            scanLineEndColour
-                        )
-                    elif shade_t == 'phong':
-                        pixelColor = interpolate(
-                            round(np.nanmin(activeMarginalPoints)),
-                            round(np.nanmax(activeMarginalPoints)),
-                            X,
-                            scanLineStartColour,
-                            scanLineEndColour
-                        )
-                        pointNormal = interpolate(
-                            round(np.nanmin(activeMarginalPoints)),
-                            round(np.nanmax(activeMarginalPoints)),
-                            X,
-                            scanLineStartNormal,
-                            scanLineEndNormal
-                        )
+        activeMarginalPoints = np.array([np.nan, np.nan, np.nan])   # Index represents each of the three sides.
+                                                                    # Values are the x coordinate of the point where
+                                                                    # scan line meets the side. nan when side is inactive
 
-                        pixelColor = pixelColor + src.ambient_light(ka, Ia)
-                        pixelColor = src.diffuse_light(bcoords, pointNormal, pixelColor, kd, lightPositions, lightIntensities)
-                        pixelColor = src.specular_light(bcoords, pointNormal, pixelColor, cameraPosition, ks, n, lightPositions, lightIntensities)
+        # Calculate triangle colour for flat algorithm
+        if shade_t == 'flat':
+            flatColour = np.array([
+                np.sum(vcolors[:,0])/3,
+                np.sum(vcolors[:,1])/3,
+                np.sum(vcolors[:,2])/3
+            ])
 
-                        # Clip color
-                        pixelColor[pixelColor > 1.] = 1.
-                        pixelColor[pixelColor < 0.] = 0.
+        # Store info for each side.
+            #Sides are:
+            #Side 0: vertice 0 to 1
+            #Side 1: vertice 1 to 0
+            #Side 2: vertice 2 to 0
+        for k in range(3):
+            sideStart = k
+            sidesHaveVerts[k][0] = sideStart
+            sideEnd = (k+1)<=2 and k+1 or 0         # If k+1=3: vertice=0
+            sidesHaveVerts[k][1] = sideEnd
 
-                        img[int(Y)][int(X)] = pixelColor
+            Ymin[k] = min(verts2d[sideStart][1], verts2d[sideEnd][1])
+            Ymax[k] = max(verts2d[sideStart][1], verts2d[sideEnd][1])
 
-        # Update active sides and marginal points
+            if verts2d[sideEnd][0] == verts2d[sideStart][0]:    # When side is vertical.
+                sideGradient[k] = np.inf
+            else:
+                sideGradient[k] = (                                     # ( yEnd-yStart ) / ( xend-xstart )
+                    (verts2d[sideEnd][1] - verts2d[sideStart][1])/
+                    (verts2d[sideEnd][0] - verts2d[sideStart][0])
+                )
+        
+        # First scan line begins on minimum Y.
+        activeSides = np.where(Ymin == Ymin.min())[0]
         for side in activeSides:
-            if Ymax[side] == Y: # End of this line. Remove it and its marginal point
-                activeSides = np.delete(activeSides, np.where(activeSides == side))
-                activeMarginalPoints[side] = np.nan
-
-        # Increase each remaining marginal points by 1/sideGradient
-        for side, point in enumerate(activeMarginalPoints):
-            if np.isnan(point) or np.isinf(sideGradient[side]): # Continue if no point or side is vertical
-                continue
-            activeMarginalPoints[side] = point + 1/sideGradient[side]
-
-        # Add sides that have their minY = scanY+1
-        # Add their marginal point
-        for side in np.where(Ymin == Y+1)[0]:
-            activeSides = np.append(activeSides, side)
             activeMarginalPoints[side] = min(
-            verts2d[
-                sidesHaveVerts[side][
-                    np.where( verts2d[ sidesHaveVerts[side] ][:,1] == (Y+1) )
-                ]
-            ][:,0]
-        )
+                verts2d[
+                    sidesHaveVerts[side][
+                        np.where( verts2d[ sidesHaveVerts[side] ][:,1] == Ymin.min() )
+                    ]
+                ][:,0]
+            )
 
-    return img
+        # Scan lines from minimum Y to maximum Y
+        for Y in range(round(Ymin.min()), round(Ymax.max()) + 1): 
+            # Clip if out of image size
+            if 0 <= Y < np.shape(img)[0]:
+                # Calculate line colour extremes for gouraud or phong algorithm
+                if shade_t == 'gouraud' or shade_t == 'phong':
+                    startingLine = np.nanargmin(activeMarginalPoints)
+                    finishLine = np.nanargmax(activeMarginalPoints)
 
-    
+                    scanLineStartColour = interpolate(
+                        round(verts2d[ sidesHaveVerts[startingLine][0] ][1]),
+                        round(verts2d[ sidesHaveVerts[startingLine][1] ][1]),
+                        Y,
+                        vcolors[ sidesHaveVerts[startingLine][0] ],
+                        vcolors[ sidesHaveVerts[startingLine][1] ])
 
+                    scanLineEndColour = interpolate(
+                        round(verts2d[ sidesHaveVerts[finishLine][0] ][1]),
+                        round(verts2d[ sidesHaveVerts[finishLine][1] ][1]),
+                        Y,
+                        vcolors[ sidesHaveVerts[finishLine][0] ],
+                        vcolors[ sidesHaveVerts[finishLine][1] ])
+                
+                # Calculate normals on marginal points for phong algorithm
+                if shade_t == 'phong':
+                    scanLineStartNormal = interpolate(
+                        round(verts2d[ sidesHaveVerts[startingLine][0] ][1]),
+                        round(verts2d[ sidesHaveVerts[startingLine][1] ][1]),
+                        Y,
+                        vnormals[ sidesHaveVerts[startingLine][0] ],
+                        vnormals[ sidesHaveVerts[startingLine][1] ])
 
+                    scanLineEndNormal = interpolate(
+                        round(verts2d[ sidesHaveVerts[finishLine][0] ][1]),
+                        round(verts2d[ sidesHaveVerts[finishLine][1] ][1]),
+                        Y,
+                        vnormals[ sidesHaveVerts[finishLine][0] ],
+                        vnormals[ sidesHaveVerts[finishLine][1] ])
 
-def render(verts2d: np.ndarray, faces: np.ndarray, vcolors: np.ndarray, depth: np.ndarray, shade_t: str) -> np.ndarray:
-    """
-        Render image
+                # Scan line Y
+                # Draw between min to max marginal points.
+                for X in range(round(np.nanmin(activeMarginalPoints)), round(np.nanmax(activeMarginalPoints)) + 1):
+                    # Clip if out of image size
+                    if 0 <= X < np.shape(img)[1]:
+                        if shade_t == 'flat':
+                            img[int(Y)][int(X)] = flatColour
+                        elif shade_t == 'gouraud':
+                            img[int(Y)][int(X)] = interpolate(
+                                round(np.nanmin(activeMarginalPoints)),
+                                round(np.nanmax(activeMarginalPoints)),
+                                X,
+                                scanLineStartColour,
+                                scanLineEndColour
+                            )
+                        elif shade_t == 'phong':
+                            pixelColor = interpolate(
+                                round(np.nanmin(activeMarginalPoints)),
+                                round(np.nanmax(activeMarginalPoints)),
+                                X,
+                                scanLineStartColour,
+                                scanLineEndColour
+                            )
+                            pointNormal = interpolate(
+                                round(np.nanmin(activeMarginalPoints)),
+                                round(np.nanmax(activeMarginalPoints)),
+                                X,
+                                scanLineStartNormal,
+                                scanLineEndNormal
+                            )
 
-        Arguments:
-            verts2d:
-            faces:
-            vcolors:
-            depth:
-            shade_t: flat or gouraud
+                            pixelColor = pixelColor + src.ambient_light(ka, Ia)
+                            pixelColor = src.diffuse_light(bcoords, pointNormal, pixelColor, kd, lightPositions, lightIntensities)
+                            pixelColor = src.specular_light(bcoords, pointNormal, pixelColor, cameraPosition, ks, n, lightPositions, lightIntensities)
 
-        Returns:
-            rendered image
-    """
+                            img[int(Y)][int(X)] = pixelColor
 
-    # Initialize image. Size and background colour is stored in constants
-    img = np.full( (M, N, 3) , BACKGROUND)
+            # Update active sides and marginal points
+            for side in activeSides:
+                if Ymax[side] == Y: # End of this line. Remove it and its marginal point
+                    activeSides = np.delete(activeSides, np.where(activeSides == side))
+                    activeMarginalPoints[side] = np.nan
 
-    # Iterate through sorted faces by descending depth order and draw the triangles
-    for face in _sort_faces(faces, depth):
-        img = shade_triangle(
-            img, 
-            np.array([ verts2d[face[0]], verts2d[face[1]], verts2d[face[2]] ]),
-            np.array([ vcolors[face[0]], vcolors[face[1]], vcolors[face[2]] ]),
-            shade_t
-        )
+            # Increase each remaining marginal points by 1/sideGradient
+            for side, point in enumerate(activeMarginalPoints):
+                if np.isnan(point) or np.isinf(sideGradient[side]): # Continue if no point or side is vertical
+                    continue
+                activeMarginalPoints[side] = point + 1/sideGradient[side]
 
-    return img
+            # Add sides that have their minY = scanY+1
+            # Add their marginal point
+            for side in np.where(Ymin == Y+1)[0]:
+                activeSides = np.append(activeSides, side)
+                activeMarginalPoints[side] = min(
+                verts2d[
+                    sidesHaveVerts[side][
+                        np.where( verts2d[ sidesHaveVerts[side] ][:,1] == (Y+1) )
+                    ]
+                ][:,0]
+            )
+
+        return img
 
 
 

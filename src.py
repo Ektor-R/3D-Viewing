@@ -1,4 +1,5 @@
 import numpy as np
+
 import triangle_rasterizer
 import projection
 
@@ -12,8 +13,8 @@ def ambient_light(ka: float, Ia: np.ndarray) -> np.ndarray:
         Calculate ambient light
 
         Arguments:
-            k: Ambient reflection coefficient
-            I: Global ambient illumination
+            ka: Ambient reflection coefficient
+            Ia: Global ambient illumination
         
         Returns:
             ambient light
@@ -38,7 +39,7 @@ def diffuse_light(
                 point: Point to calculate reflection on.
                 N: surface perpendicular vector on point.
                 color: color of point.
-                k: light reflection coefficient.
+                kd: light reflection coefficient.
                 lightPositions: List with coordinates of light sources.
                 lightIntensities: List with light intensity of each color source
                 
@@ -54,17 +55,13 @@ def diffuse_light(
 
         # Calculate unit vectors of each light source with point as the start
         lightVectors = lightPositions - point
-        # TODO lightVector = 0 (point is a source)
         lightVectors = lightVectors/np.linalg.norm(lightVectors, axis=1)[:,None]
 
         # Calculate (cosine of) angle of each light source with N (dot product of each light vector with N)
         lightAngles = np.einsum('j,ij->i', N, lightVectors)
 
-        #lightDistances = np.linalg.norm(lightPositions-point, axis=1)
-        #attenuationFactors = 1/(lightDistances**2)
-
         # Reflection created by each light source
-        reflections = lightIntensities * kd * lightAngles[:,None] # * attenuationFactors[:,None]
+        reflections = lightIntensities * kd * lightAngles[:,None]
 
         return color + np.sum(reflections, axis=0)
 
@@ -88,7 +85,7 @@ def specular_light(
                 N: Surface perpendicular vector on point.
                 color: Color of point.
                 cameraPosition: Camera center coordinates
-                k: Light reflection coefficient.
+                ks: Light reflection coefficient.
                 n: Phong coefficient.
                 lightPositions: List with coordinates of light sources.
                 lightIntensities: List with light intensity of each color source
@@ -105,12 +102,10 @@ def specular_light(
 
         # Calculate unit vectors of each light source with point as the start
         lightVectors = lightPositions - point
-        # TODO lightVector = 0 (point is a source)
         lightVectors = lightVectors / np.linalg.norm(lightVectors, axis=1)[:,None]
 
         # Calculate unit vector of camera center with point as the start
         cameraVector = cameraPosition - point
-        # TODO cameraVector = 0 (point is camera center)
         cameraVector = cameraVector / np.linalg.norm(cameraVector)
 
         lightAngles = np.einsum(
@@ -120,7 +115,7 @@ def specular_light(
             )
 
         # Reflection created by each light source
-        reflections = lightIntensities * ks * (lightAngles[:,None]**n)
+        reflections = lightIntensities * ks * (np.absolute(lightAngles[:,None])**n) * np.sign(lightAngles)[:,None]
 
         return color + np.sum(reflections, axis=0)
 
@@ -128,7 +123,7 @@ def specular_light(
 
 def calculate_normals(vertices: np.ndarray, faceIndices: np.ndarray) -> np.ndarray:
     """
-        Calculate normal vector of all triangles on each of their vertices
+        Calculate normal vector on each vertex
 
         Arguments:
             vertices: Array with coordinates of vertices
@@ -146,14 +141,12 @@ def calculate_normals(vertices: np.ndarray, faceIndices: np.ndarray) -> np.ndarr
         vertices[faceIndices[:,1]] - vertices[faceIndices[:,0]], 
         vertices[faceIndices[:,2]] - vertices[faceIndices[:,0]]
     )
+    triangleNormals = triangleNormals / np.linalg.norm(triangleNormals, axis=1)[:,None]
 
     normals = np.zeros([vertices.shape[0],3])
 
-    normals[faceIndices[:,0]] = triangleNormals + vertices[faceIndices[:,0]]
-    normals[faceIndices[:,1]] = triangleNormals + vertices[faceIndices[:,1]]
-    normals[faceIndices[:,2]] = triangleNormals + vertices[faceIndices[:,2]]
-
-    # TODO normal = 0
+    for index, face in enumerate(faceIndices):
+        normals[face] += triangleNormals[index]
 
     return normals / np.linalg.norm(normals, axis=1)[:,None]
 
@@ -252,6 +245,8 @@ def render_object(
                         img
                     )
 
+            img = np.clip(img, 0., 1.)
+
         return img
 
 
@@ -298,8 +293,7 @@ def shade_gouraud(
             vertsColors[i] = specular_light(bcoords, normals[i], vertsColors[i], cameraPosition, ks, N_PHONG, lightPositions, lightIntensities)
 
         # Clip color
-        vertsColors[vertsColors < 0] = 0
-        vertsColors[vertsColors > 1.] = 1.
+        vertsColors = np.clip(vertsColors, 0., 1.)
 
         return triangle_rasterizer.shade_triangle(X, verts2d, vertsColors, 'gouraud')
 

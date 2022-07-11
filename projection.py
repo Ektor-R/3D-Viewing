@@ -1,14 +1,5 @@
 from typing import Tuple
 import numpy as np
-import triangle_rasterizer as tr
-
-# Conf
-IMG_WIDTH = 512
-IMG_HEIGHT = 512
-CAMERA_WIDTH = 15.
-CAMERA_HEIGHT = 15.
-F = 70.
-BACKGROUND = [1., 1., 1.]
 
 
 
@@ -89,8 +80,6 @@ def project_cam(f: float, center: np.ndarray, x: np.ndarray, y: np.ndarray, z: n
     if point.ndim == 1:
         point = point[None]
 
-    # TODO z <= 0 
-
     # Point projection: (x', y') = f * (x, y) / z
     verts2d = f * ( point[:, [0, 1]] / point[:, 2, None] )
 
@@ -152,50 +141,6 @@ def rasterize(verts2d: np.ndarray, imgHeight: int, imgWidth: int, camHeight: flo
     verts2d[:, 1] = imgHeight - verts2d[:, 1]
     
     return verts2d
-
-
-
-def render_object(
-        verts3d: np.ndarray,
-        faces: np.ndarray,
-        vcolors: np.ndarray,
-        imgHeight: int,
-        imgWidth: int,
-        camHeight: float,
-        camWidth: float,
-        f: float,
-        center: np.ndarray,
-        lookat: np.ndarray,
-        up: np.ndarray
-    ) -> np.ndarray:
-        """
-            Render image
-
-            Arguments:
-                verts3d: Coordinates of point(s)
-                faces: Triangles
-                vcolors: Color of point(s)
-                imgHeight: Image height
-                imgWidth: Image width
-                camHeight: Camera height
-                camWidth: Camera width
-                f: Camera f
-                center: Camera center
-                lookat: Camera lookat point
-                up: Camera up unit vector
-            Returns:
-                rendered image
-        """
-
-        [verts2d, depth] = project_cam_lookat(f, center, lookat, up, verts3d)
-
-        verts2d = rasterize(verts2d, imgHeight, imgWidth, camHeight, camWidth)
-
-        tr.BACKGROUND = BACKGROUND
-        tr.M = imgHeight
-        tr.N = imgWidth
-
-        return tr.render(verts2d, faces, vcolors, depth, 'gouraud')
 
 
 
